@@ -4,7 +4,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
+//#include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_tls.h"
@@ -111,7 +111,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 static void http_rest_with_url(void)
 {
-    char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
+    char * local_response_buffer = (char * ) malloc(MAX_HTTP_OUTPUT_BUFFER);
     /**
      * NOTE: All the configuration parameters for http_client must be spefied either in URL or as host and path parameters.
      * If host and path parameters are not set, query parameter will be ignored. In such cases,
@@ -204,113 +204,8 @@ static void http_rest_with_url(void)
         ESP_LOGE(TAG, "HTTP HEAD request failed: %s", esp_err_to_name(err));
     }
 
+    free(local_response_buffer);
+    local_response_buffer = NULL; 
     esp_http_client_cleanup(client);
 }
 
-static void http_rest_with_hostname_path(void)
-{
-    esp_http_client_config_t config = {
-        .host = "httpbin.org",
-        .path = "/get",
-        .transport_type = HTTP_TRANSPORT_OVER_TCP,
-        .event_handler = _http_event_handler,
-    };
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-
-    // GET
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
-    }
-
-    // POST
-    const char *post_data = "field1=value1&field2=value2";
-    esp_http_client_set_url(client, "/post");
-    esp_http_client_set_method(client, HTTP_METHOD_POST);
-    esp_http_client_set_post_field(client, post_data, strlen(post_data));
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
-    }
-
-    //PUT
-    esp_http_client_set_url(client, "/put");
-    esp_http_client_set_method(client, HTTP_METHOD_PUT);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP PUT Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP PUT request failed: %s", esp_err_to_name(err));
-    }
-
-    //PATCH
-    esp_http_client_set_url(client, "/patch");
-    esp_http_client_set_method(client, HTTP_METHOD_PATCH);
-    esp_http_client_set_post_field(client, NULL, 0);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP PATCH Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP PATCH request failed: %s", esp_err_to_name(err));
-    }
-
-    //DELETE
-    esp_http_client_set_url(client, "/delete");
-    esp_http_client_set_method(client, HTTP_METHOD_DELETE);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP DELETE Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP DELETE request failed: %s", esp_err_to_name(err));
-    }
-
-    //HEAD
-    esp_http_client_set_url(client, "/get");
-    esp_http_client_set_method(client, HTTP_METHOD_HEAD);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP HEAD Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP HEAD request failed: %s", esp_err_to_name(err));
-    }
-
-    esp_http_client_cleanup(client);
-}
-
-static void https_with_hostname_path(void)
-{
-    esp_http_client_config_t config = {
-        .host = "www.howsmyssl.com",
-        .path = "/",
-        .transport_type = HTTP_TRANSPORT_OVER_SSL,
-        .event_handler = _http_event_handler,
-        .cert_pem = howsmyssl_com_root_cert_pem_start,
-    };
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_err_t err = esp_http_client_perform(client);
-
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTPS Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "Error perform http request %s", esp_err_to_name(err));
-    }
-    esp_http_client_cleanup(client);
-}

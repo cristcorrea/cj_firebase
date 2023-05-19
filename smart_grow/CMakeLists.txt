@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(blufi_demo)
+project(smart_grow)
 
 set(COMPONENTS_DIR components)
 set(EXTRA_COMPONENT_DIRS  "${COMPONENTS_DIR}/DHT"

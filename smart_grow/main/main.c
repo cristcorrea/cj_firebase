@@ -18,7 +18,6 @@
 #include "driver/gpio.h"
 /* Librerias componentes */
 #include "ntp.h"
-#include "mqtt.h"
 #include "dht.h"
 #include "soil.h"
 #include "blufi.h"
@@ -51,7 +50,7 @@ void mqttServerConection(void *params)
         if (xSemaphoreTake(semaphoreWifiConection, portMAX_DELAY)) // establecida la conexión WiFi
         {
             adjust_time();
-            mqtt_start();
+            //mqtt_start();
         }
     }
 }
