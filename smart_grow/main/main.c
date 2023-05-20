@@ -33,7 +33,7 @@
 static const char* TAG = "Button press";
 
 SemaphoreHandle_t semaphoreWifiConection = NULL;
-SemaphoreHandle_t semaphoreRTC = NULL;
+SemaphoreHandle_t semaphoreSensors = NULL;
 SemaphoreHandle_t semaphoreLux = NULL;
 SemaphoreHandle_t semaphoreHTTP = NULL;
 
@@ -53,8 +53,8 @@ void mqttServerConection(void *params)
         if (xSemaphoreTake(semaphoreWifiConection, portMAX_DELAY)) // establecida la conexión WiFi
         {
             adjust_time();
-            xSemaphoreGive(semaphoreHTTP);
-            //mqtt_start();
+            xSemaphoreGive(semaphoreSensors);
+
         }
     }
 }
@@ -66,7 +66,8 @@ void sensorsMeasurement(void *params)
     gpio_set_level(POWER_CTRL, 1);
     soilConfig();
     vTaskDelay(pdMS_TO_TICKS(2000));
-    if(xSemaphoreTake(semaphoreRTC, portMAX_DELAY))
+    
+    if(xSemaphoreTake(semaphoreSensors, portMAX_DELAY))
     {   
         xSemaphoreGive(semaphoreLux);
         while(true)
@@ -139,7 +140,7 @@ void lux_sensor(void * params)
     if(xSemaphoreTake(semaphoreLux, portMAX_DELAY))
     {
         bh1750_init();
-
+        xSemaphoreGive(semaphoreHTTP);
         while(true)
         {
             bh1750_read();
@@ -165,7 +166,7 @@ void http_req(void * params)
 void app_main(void)
 {
     semaphoreWifiConection = xSemaphoreCreateBinary();
-    semaphoreRTC           = xSemaphoreCreateBinary();
+    semaphoreSensors           = xSemaphoreCreateBinary();
     semaphoreLux           = xSemaphoreCreateBinary();
     semaphoreHTTP          = xSemaphoreCreateBinary();
 

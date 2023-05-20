@@ -103,14 +103,18 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void http_rest_with_url(void)
 {
-        char * request_url = malloc(strlen(FIREBASE_URL) + strlen(API_KEY) + strlen(PATH) + 1);
+        char * request_url = malloc(strlen(FIREBASE_URL) + strlen(API_KEY) + strlen(PATH) + strlen(AUTH) + strlen((char *)configuration.UUID) + 1);
         int check = 1; 
         esp_http_client_handle_t client;
         if(request_url != NULL)
         {
             strcpy(request_url, FIREBASE_URL);
+            strcat(request_url, (char *)configuration.UUID);
             strcat(request_url, PATH);
+            strcat(request_url, AUTH);
             strcat(request_url, API_KEY);
+
+            ESP_LOGI(TAG, "%s\n", request_url);
             esp_http_client_config_t config = 
             {
                 .url = request_url,
@@ -130,9 +134,9 @@ void http_rest_with_url(void)
     {
 
         cJSON * post_data = cJSON_CreateObject();
-        cJSON_AddNumberToObject(post_data, "humedad suelo", mediciones.humedad_suelo);
+        cJSON_AddNumberToObject(post_data, "humedad_suelo", mediciones.humedad_suelo);
         char * post_data_str = cJSON_Print(post_data);
-        esp_http_client_set_method(client, HTTP_METHOD_POST);
+        esp_http_client_set_method(client, HTTP_METHOD_PUT);
         esp_http_client_set_post_field(client, post_data_str, strlen(post_data_str));
         esp_http_client_set_header(client, "Content-Type", "application/json");
 
