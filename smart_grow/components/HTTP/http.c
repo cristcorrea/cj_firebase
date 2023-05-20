@@ -4,7 +4,6 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_system.h"
-//#include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_tls.h"
@@ -26,11 +25,8 @@ static const char *TAG = "HTTP_CLIENT";
    To embed it in the app binary, the PEM file is named
    in the component.mk COMPONENT_EMBED_TXTFILES variable.
 */
-extern const char howsmyssl_com_root_cert_pem_start[] asm("_binary_howsmyssl_com_root_cert_pem_start");
-extern const char howsmyssl_com_root_cert_pem_end[]   asm("_binary_howsmyssl_com_root_cert_pem_end");
-
-extern const char postman_root_cert_pem_start[] asm("_binary_postman_root_cert_pem_start");
-extern const char postman_root_cert_pem_end[]   asm("_binary_postman_root_cert_pem_end");
+extern const uint8_t certificate_pem_start[] asm("_binary_certificate_pem_start");
+extern const uint8_t certificate_pem_end[]   asm("_binary_certificate_pem_end");
 
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
@@ -109,27 +105,31 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-static void http_rest_with_url(void)
+
+void http_rest_with_url(void)
 {
-    char * local_response_buffer = (char * ) malloc(MAX_HTTP_OUTPUT_BUFFER);
-    /**
-     * NOTE: All the configuration parameters for http_client must be spefied either in URL or as host and path parameters.
-     * If host and path parameters are not set, query parameter will be ignored. In such cases,
-     * query parameter should be specified in URL.
-     *
-     * If URL as well as host and path parameters are specified, values of host and path will be considered.
-     */
-    esp_http_client_config_t config = {
+    
+        esp_http_client_config_t config = {
+        .url = "https://proyectodeprueba-fe57d-default-rtdb.europe-west1.firebasedatabase.app/.json?auth=AIzaSyDkkQGWxdzs9Rc7We_9p0vLxPa8t3P2FTY",
+        .cert_pem = (const  char*)certificate_pem_start,
+        .event_handler = _http_event_handler,
+
+
+        /*
         .host = "httpbin.org",
         .path = "/get",
         .query = "esp",
         .event_handler = _http_event_handler,
         .user_data = local_response_buffer,        // Pass address of local buffer to get response
         .disable_auto_redirect = true,
+        */
     };
+
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
     // GET
+    /*
+    char local_response_buffer[350];
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
         ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %lld",
@@ -138,15 +138,17 @@ static void http_rest_with_url(void)
     } else {
         ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
     }
-    ESP_LOG_BUFFER_HEX(TAG, local_response_buffer, strlen(local_response_buffer));
-
+    ESP_LOGI(TAG, "%s\n", local_response_buffer);
+    //ESP_LOG_BUFFER_HEX(TAG, local_response_buffer, strlen(local_response_buffer));
+    */
     // POST
-    const char *post_data = "{\"field1\":\"value1\"}";
-    esp_http_client_set_url(client, "http://httpbin.org/post");
+    const char *post_data = "{\"nombre\":\"CJindoors\"}";
+    //esp_http_client_set_url(client, "http://httpbin.org/post");
     esp_http_client_set_method(client, HTTP_METHOD_POST);
-    esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_post_field(client, post_data, strlen(post_data));
-    err = esp_http_client_perform(client);
+    esp_http_client_set_header(client, "Content-Type", "application/json");
+
+    esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK) {
         ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %lld",
                 esp_http_client_get_status_code(client),
@@ -154,58 +156,7 @@ static void http_rest_with_url(void)
     } else {
         ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
     }
-
-    //PUT
-    esp_http_client_set_url(client, "http://httpbin.org/put");
-    esp_http_client_set_method(client, HTTP_METHOD_PUT);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP PUT Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP PUT request failed: %s", esp_err_to_name(err));
-    }
-
-    //PATCH
-    esp_http_client_set_url(client, "http://httpbin.org/patch");
-    esp_http_client_set_method(client, HTTP_METHOD_PATCH);
-    esp_http_client_set_post_field(client, NULL, 0);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP PATCH Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP PATCH request failed: %s", esp_err_to_name(err));
-    }
-
-    //DELETE
-    esp_http_client_set_url(client, "http://httpbin.org/delete");
-    esp_http_client_set_method(client, HTTP_METHOD_DELETE);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP DELETE Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP DELETE request failed: %s", esp_err_to_name(err));
-    }
-
-    //HEAD
-    esp_http_client_set_url(client, "http://httpbin.org/get");
-    esp_http_client_set_method(client, HTTP_METHOD_HEAD);
-    err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP HEAD Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP HEAD request failed: %s", esp_err_to_name(err));
-    }
-
-    free(local_response_buffer);
-    local_response_buffer = NULL; 
+    
     esp_http_client_cleanup(client);
 }
 

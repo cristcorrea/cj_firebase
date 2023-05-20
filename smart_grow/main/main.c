@@ -25,6 +25,7 @@
 #include "bh1750.h" 
 #include "pomp.h"
 #include "header.h"
+#include "http.h"
 
 #define POWER_CTRL 4
 #define ERASED     35 
@@ -34,6 +35,8 @@ static const char* TAG = "Button press";
 SemaphoreHandle_t semaphoreWifiConection = NULL;
 SemaphoreHandle_t semaphoreRTC = NULL;
 SemaphoreHandle_t semaphoreLux = NULL;
+SemaphoreHandle_t semaphoreHTTP = NULL;
+
 
 
 TaskHandle_t xHandle = NULL;
@@ -50,6 +53,7 @@ void mqttServerConection(void *params)
         if (xSemaphoreTake(semaphoreWifiConection, portMAX_DELAY)) // establecida la conexión WiFi
         {
             adjust_time();
+            xSemaphoreGive(semaphoreHTTP);
             //mqtt_start();
         }
     }
@@ -144,11 +148,26 @@ void lux_sensor(void * params)
     }
 }
 
+void http_req(void * params)
+{   
+
+    if(xSemaphoreTake(semaphoreHTTP, portMAX_DELAY))
+    {
+        while(true)
+        {
+            http_rest_with_url();
+            vTaskDelay(pdMS_TO_TICKS(15000));
+        }
+    }
+
+}
+
 void app_main(void)
 {
     semaphoreWifiConection = xSemaphoreCreateBinary();
     semaphoreRTC           = xSemaphoreCreateBinary();
     semaphoreLux           = xSemaphoreCreateBinary();
+    semaphoreHTTP          = xSemaphoreCreateBinary();
 
     blufi_start();
 
@@ -223,6 +242,13 @@ void app_main(void)
                 2048,
                 NULL,
                 1,
+                NULL);
+
+    xTaskCreate(&http_req,
+                "Realiza comunicacion HTTP",
+                4096,
+                NULL,
+                2,
                 NULL);
                 
     vTaskSuspend(xHandle);
