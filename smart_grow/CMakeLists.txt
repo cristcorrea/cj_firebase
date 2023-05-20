@@ -14,4 +14,5 @@ set(EXTRA_COMPONENT_DIRS  "${COMPONENTS_DIR}/DHT"
                           "${COMPONENTS_DIR}/STORAGE"
                           "${COMPONENTS_DIR}/BH1750"
                           "${COMPONENTS_DIR}/HEADER"
-                          "${COMPONENTS_DIR}/HTTP")
+                          "${COMPONENTS_DIR}/HTTP"
+                          "${COMPONENTS_DIR}/CJSON")

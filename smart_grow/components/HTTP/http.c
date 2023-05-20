@@ -7,26 +7,20 @@
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_tls.h"
+#include "header.h"
+#include "http_config.h"
+#include "cJSON.h"
 
 
 #include "esp_http_client.h"
 
-#define MAX_HTTP_RECV_BUFFER 512
-#define MAX_HTTP_OUTPUT_BUFFER 2048
 static const char *TAG = "HTTP_CLIENT";
 
-/* Root cert for howsmyssl.com, taken from howsmyssl_com_root_cert.pem
-
-   The PEM file was extracted from the output of this command:
-   openssl s_client -showcerts -connect www.howsmyssl.com:443 </dev/null
-
-   The CA root cert is the last cert given in the chain of certs.
-
-   To embed it in the app binary, the PEM file is named
-   in the component.mk COMPONENT_EMBED_TXTFILES variable.
-*/
 extern const uint8_t certificate_pem_start[] asm("_binary_certificate_pem_start");
 extern const uint8_t certificate_pem_end[]   asm("_binary_certificate_pem_end");
+
+extern sensor_data mediciones;
+extern config_data configuration; 
 
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
@@ -106,26 +100,56 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 }
 
 
+
 void http_rest_with_url(void)
 {
+        char * request_url = malloc(strlen(FIREBASE_URL) + strlen(API_KEY) + strlen(PATH) + 1);
+        int check = 1; 
+        esp_http_client_handle_t client;
+        if(request_url != NULL)
+        {
+            strcpy(request_url, FIREBASE_URL);
+            strcat(request_url, PATH);
+            strcat(request_url, API_KEY);
+            esp_http_client_config_t config = 
+            {
+                .url = request_url,
+                .cert_pem = (const  char*)certificate_pem_start,
+                .event_handler = _http_event_handler,
+            };
+            client = esp_http_client_init(&config);
+            check = 0; 
+        }
+
+
+
     
-        esp_http_client_config_t config = {
-        .url = "https://proyectodeprueba-fe57d-default-rtdb.europe-west1.firebasedatabase.app/.json?auth=AIzaSyDkkQGWxdzs9Rc7We_9p0vLxPa8t3P2FTY",
-        .cert_pem = (const  char*)certificate_pem_start,
-        .event_handler = _http_event_handler,
 
+    // POST
+    if(check == 0)
+    {
 
-        /*
-        .host = "httpbin.org",
-        .path = "/get",
-        .query = "esp",
-        .event_handler = _http_event_handler,
-        .user_data = local_response_buffer,        // Pass address of local buffer to get response
-        .disable_auto_redirect = true,
-        */
-    };
+        cJSON * post_data = cJSON_CreateObject();
+        cJSON_AddNumberToObject(post_data, "humedad suelo", mediciones.humedad_suelo);
+        char * post_data_str = cJSON_Print(post_data);
+        esp_http_client_set_method(client, HTTP_METHOD_POST);
+        esp_http_client_set_post_field(client, post_data_str, strlen(post_data_str));
+        esp_http_client_set_header(client, "Content-Type", "application/json");
 
-    esp_http_client_handle_t client = esp_http_client_init(&config);
+        esp_err_t err = esp_http_client_perform(client);
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %lld",
+                    esp_http_client_get_status_code(client),
+                    esp_http_client_get_content_length(client));
+        } else {
+            ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
+        }
+        esp_http_client_cleanup(client);
+        free(request_url);
+        free(post_data_str);
+        cJSON_Delete(post_data);
+    }
+
 
     // GET
     /*
@@ -141,22 +165,6 @@ void http_rest_with_url(void)
     ESP_LOGI(TAG, "%s\n", local_response_buffer);
     //ESP_LOG_BUFFER_HEX(TAG, local_response_buffer, strlen(local_response_buffer));
     */
-    // POST
-    const char *post_data = "{\"nombre\":\"CJindoors\"}";
-    //esp_http_client_set_url(client, "http://httpbin.org/post");
-    esp_http_client_set_method(client, HTTP_METHOD_POST);
-    esp_http_client_set_post_field(client, post_data, strlen(post_data));
-    esp_http_client_set_header(client, "Content-Type", "application/json");
 
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "HTTP POST Status = %d, content_length = %lld",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
-    } else {
-        ESP_LOGE(TAG, "HTTP POST request failed: %s", esp_err_to_name(err));
-    }
-    
-    esp_http_client_cleanup(client);
 }
 
