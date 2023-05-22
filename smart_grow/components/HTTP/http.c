@@ -103,8 +103,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void http_rest_with_url(void)
 {
-        char * coleccion = "/mediciones/";
-        char * request_url = malloc(strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 2); //
+        char * request_url = malloc(strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 14); //
         int check = 1; 
         esp_http_client_handle_t client;
         if(request_url != NULL) 
@@ -137,6 +136,8 @@ void http_rest_with_url(void)
     {
 
         cJSON * post_data = cJSON_CreateObject();
+        cJSON * name = cJSON_AddObjectToObject(post_data, "name");
+        cJSON * id = cJSON_AddStringToObject(name, "stringValue", "123456");
         cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
         cJSON * temp_amb = cJSON_AddObjectToObject(fields, "temp_amb");
         cJSON_AddNumberToObject(temp_amb, "doubleValue", mediciones.temperatura_amb);
@@ -160,6 +161,17 @@ void http_rest_with_url(void)
         free(post_data_str);
         cJSON_Delete(post_data);
     }
+
+
+/*
+        cJSON * post_data = cJSON_CreateObject();
+        cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
+        cJSON * temp_amb = cJSON_AddObjectToObject(fields, "temp_amb");
+        cJSON_AddNumberToObject(temp_amb, "doubleValue", mediciones.temperatura_amb);
+
+
+*/
+
 
 
     // GET
