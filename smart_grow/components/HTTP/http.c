@@ -114,7 +114,7 @@ void http_rest_with_url(void)
             strcat(request_url, configuration.UUID); // documentoo UUID
             strcat(request_url, "/");
             strcat(request_url, configuration.MAC);
-            //strcat(request_url, (char *) configuration.UUID);
+            
 
 
             ESP_LOGI(TAG, "%s\n", request_url);
