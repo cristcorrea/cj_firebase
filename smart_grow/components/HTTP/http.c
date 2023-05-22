@@ -104,33 +104,33 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 void http_rest_with_url(void)
 {
         char * coleccion = "/mediciones/";
-        char * request_url = malloc(strlen(FIRESTORE_URL)  + strlen(coleccion) + 6); //
+        char * request_url = malloc(strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 2); //
         int check = 1; 
         esp_http_client_handle_t client;
         if(request_url != NULL) 
         {
             
-            strcpy(request_url, FIRESTORE_URL);
-            strcat(request_url, "users");
-            strcat(request_url, coleccion);
+            strcpy(request_url, FIRESTORE_URL); // url + coleccion
+            strcat(request_url, configuration.UUID); // documentoo UUID
+            strcat(request_url, "/");
+            strcat(request_url, configuration.MAC);
             //strcat(request_url, (char *) configuration.UUID);
 
 
             ESP_LOGI(TAG, "%s\n", request_url);
+
   
+
             esp_http_client_config_t config = 
             {
                 .url = request_url,
-                .cert_pem = (const  char*)certificate_pem_start,
                 .event_handler = _http_event_handler,
+                .cert_pem = (const  char*)certificate_pem_start,
             };
+            
             client = esp_http_client_init(&config);
             check = 0; 
         }
-
-
-
-    
 
     // POST
     if(check == 0)
@@ -144,6 +144,8 @@ void http_rest_with_url(void)
         esp_http_client_set_method(client, HTTP_METHOD_POST);
         esp_http_client_set_post_field(client, post_data_str, strlen(post_data_str));
         esp_http_client_set_header(client, "Content-Type", "application/json");
+
+        ESP_LOGI(TAG, "%s\n", post_data_str);
 
         esp_err_t err = esp_http_client_perform(client);
         if (err == ESP_OK) {
