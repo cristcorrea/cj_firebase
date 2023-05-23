@@ -154,9 +154,10 @@ void http_req(void * params)
 
     if(xSemaphoreTake(semaphoreHTTP, portMAX_DELAY))
     {
+        http_rest_with_url();
         while(true)
         {
-            http_rest_with_url();
+            //http_rest_with_url();
             vTaskDelay(pdMS_TO_TICKS(15000));
         }
     }

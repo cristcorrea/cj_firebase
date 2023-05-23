@@ -41,7 +41,8 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
             ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
             break;
         case HTTP_EVENT_ON_DATA:
-            ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            //ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            ESP_LOGI(TAG, "%.*s\n", evt->data_len, (char*)evt->data);
             /*
              *  Check for chunked encoding is added as the URL for chunked encoding used in this example returns binary data.
              *  However, event handler can also be used in case chunked encoding is used.
@@ -103,8 +104,8 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void http_rest_with_url(void)
 {
-        char * document_id = "111111111111A";
-        int tamanio = strlen(document_id) + strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 3;
+
+        int tamanio = strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 2;
         char * request_url = malloc(tamanio); //
         ESP_LOGI(TAG, "Tamanio del url: %i\n", tamanio);
         int check = 1; 
@@ -114,10 +115,9 @@ void http_rest_with_url(void)
             memset(request_url, 0, tamanio);
             strcpy(request_url, FIRESTORE_URL); // url + coleccion
             strcat(request_url, configuration.UUID); // documento UUID
-            strcat(request_url, "/");
-            strcat(request_url, configuration.MAC); //coleccion 
-            strcat(request_url, "/");
-            strcat(request_url, document_id);
+            //strcat(request_url, "/");
+            //strcat(request_url, configuration.MAC); //coleccion 
+
             
             ESP_LOGI(TAG, "%s\n", request_url);
 
@@ -136,10 +136,14 @@ void http_rest_with_url(void)
     if(check == 0)
     {
 
+
         cJSON * post_data = cJSON_CreateObject();
         cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
-        cJSON * temp_amb = cJSON_AddObjectToObject(fields, "temp_amb");
-        cJSON_AddNumberToObject(temp_amb, "doubleValue", mediciones.temperatura_amb);
+        cJSON_AddStringToObject(fields, "UUID", configuration.UUID);
+        cJSON_AddStringToObject(fields, "MAC", configuration.MAC);
+        cJSON_AddNumberToObject(fields, "hum_sup", configuration.hum_sup);
+        cJSON_AddNumberToObject(fields, "hum_inf", configuration.hum_inf);
+        cJSON_AddNumberToObject(fields, "control_riego", configuration.control_riego);
         char * post_data_str = cJSON_Print(post_data);
         esp_http_client_set_method(client, HTTP_METHOD_POST);
         esp_http_client_set_post_field(client, post_data_str, strlen(post_data_str));
