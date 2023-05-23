@@ -103,22 +103,23 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 
 void http_rest_with_url(void)
 {
-        char * request_url = malloc(strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 14); //
+        char * document_id = "111111111111A";
+        int tamanio = strlen(document_id) + strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 3;
+        char * request_url = malloc(tamanio); //
+        ESP_LOGI(TAG, "Tamanio del url: %i\n", tamanio);
         int check = 1; 
         esp_http_client_handle_t client;
         if(request_url != NULL) 
         {
-            
+            memset(request_url, 0, tamanio);
             strcpy(request_url, FIRESTORE_URL); // url + coleccion
-            strcat(request_url, configuration.UUID); // documentoo UUID
+            strcat(request_url, configuration.UUID); // documento UUID
             strcat(request_url, "/");
-            strcat(request_url, configuration.MAC);
+            strcat(request_url, configuration.MAC); //coleccion 
+            strcat(request_url, "/");
+            strcat(request_url, document_id);
             
-
-
             ESP_LOGI(TAG, "%s\n", request_url);
-
-  
 
             esp_http_client_config_t config = 
             {
@@ -136,8 +137,6 @@ void http_rest_with_url(void)
     {
 
         cJSON * post_data = cJSON_CreateObject();
-        cJSON * name = cJSON_AddObjectToObject(post_data, "name");
-        cJSON * id = cJSON_AddStringToObject(name, "stringValue", "123456");
         cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
         cJSON * temp_amb = cJSON_AddObjectToObject(fields, "temp_amb");
         cJSON_AddNumberToObject(temp_amb, "doubleValue", mediciones.temperatura_amb);
