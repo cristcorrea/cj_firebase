@@ -105,7 +105,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 void http_rest_with_url(void)
 {
 
-        int tamanio =   strlen("configuracion") + strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 3;
+        int tamanio =  strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 3;
         char * request_url = malloc(tamanio); //
         ESP_LOGI(TAG, "Tamanio del url: %i\n", tamanio);
         int check = 1; 
@@ -117,8 +117,7 @@ void http_rest_with_url(void)
             strcat(request_url, configuration.UUID); // documento UUID
             strcat(request_url, "/");
             strcat(request_url, configuration.MAC); //coleccion 
-            strcat(request_url, "/");
-            strcat(request_url, "configuracion");
+ 
 
             
             ESP_LOGI(TAG, "%s\n", request_url);
@@ -140,7 +139,13 @@ void http_rest_with_url(void)
 
 
         cJSON * post_data = cJSON_CreateObject();
+        cJSON * document_ = cJSON_AddObjectToObject(post_data, "document");
+
+        cJSON_AddStringToObject(document_, "stringValue", "configuration");
+        cJSON_AddItemToObject(post_data, "document", document_);
+
         cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
+
 
         cJSON * uuid_ = cJSON_CreateObject();
         cJSON_AddStringToObject(uuid_, "stringValue", configuration.UUID);
