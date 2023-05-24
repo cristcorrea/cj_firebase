@@ -105,7 +105,7 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 void http_rest_with_url(void)
 {
 
-        int tamanio = strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 2;
+        int tamanio =   strlen("configuracion") + strlen(FIRESTORE_URL)  + strlen(configuration.UUID) + strlen(configuration.MAC) + 3;
         char * request_url = malloc(tamanio); //
         ESP_LOGI(TAG, "Tamanio del url: %i\n", tamanio);
         int check = 1; 
@@ -115,8 +115,10 @@ void http_rest_with_url(void)
             memset(request_url, 0, tamanio);
             strcpy(request_url, FIRESTORE_URL); // url + coleccion
             strcat(request_url, configuration.UUID); // documento UUID
-            //strcat(request_url, "/");
-            //strcat(request_url, configuration.MAC); //coleccion 
+            strcat(request_url, "/");
+            strcat(request_url, configuration.MAC); //coleccion 
+            strcat(request_url, "/");
+            strcat(request_url, "configuracion");
 
             
             ESP_LOGI(TAG, "%s\n", request_url);
@@ -139,11 +141,27 @@ void http_rest_with_url(void)
 
         cJSON * post_data = cJSON_CreateObject();
         cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
-        cJSON_AddStringToObject(fields, "UUID", configuration.UUID);
-        cJSON_AddStringToObject(fields, "MAC", configuration.MAC);
-        cJSON_AddNumberToObject(fields, "hum_sup", configuration.hum_sup);
-        cJSON_AddNumberToObject(fields, "hum_inf", configuration.hum_inf);
-        cJSON_AddNumberToObject(fields, "control_riego", configuration.control_riego);
+
+        cJSON * uuid_ = cJSON_CreateObject();
+        cJSON_AddStringToObject(uuid_, "stringValue", configuration.UUID);
+        cJSON_AddItemToObject(fields, "UUID", uuid_);
+
+        cJSON * mac_ = cJSON_CreateObject();
+        cJSON_AddStringToObject(mac_, "stringValue", configuration.MAC);
+        cJSON_AddItemToObject(fields, "MAC", mac_);
+
+        cJSON * hum_sup_ = cJSON_CreateObject();
+        cJSON_AddNumberToObject(hum_sup_, "integerValue", configuration.hum_sup);
+        cJSON_AddItemToObject(fields, "hum_sup", hum_sup_);
+
+        cJSON * hum_inf_ = cJSON_CreateObject();
+        cJSON_AddNumberToObject(hum_inf_, "integerValue", configuration.hum_inf);
+        cJSON_AddItemToObject(fields, "hum_inf", hum_inf_);
+
+        cJSON * control_riego_ = cJSON_CreateObject();
+        cJSON_AddNumberToObject(control_riego_, "integerValue", configuration.control_riego);
+        cJSON_AddItemToObject(fields, "control_riego", control_riego_);
+
         char * post_data_str = cJSON_Print(post_data);
         esp_http_client_set_method(client, HTTP_METHOD_POST);
         esp_http_client_set_post_field(client, post_data_str, strlen(post_data_str));
@@ -164,17 +182,6 @@ void http_rest_with_url(void)
         free(post_data_str);
         cJSON_Delete(post_data);
     }
-
-
-/*
-        cJSON * post_data = cJSON_CreateObject();
-        cJSON * fields = cJSON_AddObjectToObject(post_data, "fields");
-        cJSON * temp_amb = cJSON_AddObjectToObject(fields, "temp_amb");
-        cJSON_AddNumberToObject(temp_amb, "doubleValue", mediciones.temperatura_amb);
-
-
-*/
-
 
 
     // GET
